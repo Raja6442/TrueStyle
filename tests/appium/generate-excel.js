@@ -1,73 +1,152 @@
 const fs = require('fs');
 const path = require('path');
 
+const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 const generateMobileTestCases = () => {
     const cases = [];
-    
-    // CSV Header
     cases.push(["Test ID", "Test Name", "Module", "Action", "Expected Result", "Status"]);
 
-    const modules = ["Mobile UI", "Touch Gestures", "Authentication", "Device State", "Deep Linking"];
-    
-    // Hardcoded core manual Mobile E2E test cases
-    cases.push(["TC_M001", "Valid User Login (Mobile)", "Authentication", "Enter correct email/password, tap submit", "Redirect to mobile dashboard", "Pending"]);
-    cases.push(["TC_M002", "Virtual Keyboard Override", "Mobile UI", "Tap password field, hide keyboard, tap submit", "Button remains accessible and clickable", "Pending"]);
-    cases.push(["TC_M003", "Device Rotation (Landscape)", "Device State", "Rotate device to Landscape on login screen", "Layout constraints adjust, form remains visible", "Pending"]);
-    cases.push(["TC_M004", "Device Rotation (Portrait)", "Device State", "Rotate back to Portrait mode", "UI reverts to vertical constraints", "Pending"]);
-    cases.push(["TC_M005", "Biometric Authentication Fallback", "Authentication", "Deny fingerprint prompt (if native)", "Fall back to password field smoothly", "Pending"]);
-    cases.push(["TC_M006", "Offline Mode Launch", "Device State", "Turn off Wi-Fi & Cellular, launch app", "Display native 'No Internet' popup", "Pending"]);
-    cases.push(["TC_M007", "Background & Resume", "Device State", "Minimize app for 10s and resume", "App state retained, user not logged out", "Pending"]);
-    cases.push(["TC_M008", "Deep Link Launch", "Deep Linking", "Launch app via truestyle://login link", "Directly opens Login screen and parses tokens", "Pending"]);
-    cases.push(["TC_M009", "Swipe Down Refresh", "Touch Gestures", "Perform swipe down gesture on login", "Trigger pull-to-refresh spinner", "Pending"]);
-    cases.push(["TC_M010", "Pinch Zoom Prevention", "Touch Gestures", "Attempt pinch-to-zoom on screen", "Viewport scale remains fixed at 1.0", "Pending"]);
-    cases.push(["TC_M011", "Push Notification Interruption", "Device State", "Simulate receiving push notification", "Alert shows at top without crashing input", "Pending"]);
-    cases.push(["TC_M012", "Dark Mode OS Toggle", "Mobile UI", "Toggle iOS/Android Dark Mode setting", "App theme dynamically switches to Dark", "Pending"]);
+    const modules = ["Login UI", "Authentication", "Validation", "Network", "Security"];
 
-    // Generate remaining test cases programmatically to reach exactly 300
-    for (let i = 13; i <= 300; i++) {
-        const id = `TC_M${i.toString().padStart(3, '0')}`;
-        const mod = modules[i % modules.length];
-        
-        let name, action, expected;
+    cases.push(["TC_001", "Valid User Login", "Authentication", "Enter correct email and password on mobile", "Redirect to mobile dashboard", "Pending"]);
+    cases.push(["TC_002", "Valid Admin Login", "Authentication", "Enter admin email and password on mobile", "Redirect to mobile admin panel", "Pending"]);
+    cases.push(["TC_003", "Invalid Password", "Authentication", "Enter correct email, wrong password", "Show 'Invalid email or password' error", "Pending"]);
+    cases.push(["TC_004", "Invalid Email", "Authentication", "Enter non-existent email, any password", "Show 'Invalid email or password' error", "Pending"]);
+    cases.push(["TC_005", "Empty Fields", "Validation", "Tap login with empty fields", "Mobile validation stops submission", "Pending"]);
+    cases.push(["TC_006", "Empty Password", "Validation", "Enter email, leave password empty", "Mobile validation stops submission", "Pending"]);
+    cases.push(["TC_007", "Empty Email", "Validation", "Enter password, leave email empty", "Mobile validation stops submission", "Pending"]);
+    cases.push(["TC_008", "Malformed Email", "Validation", "Enter 'user@com' without domain", "Mobile validation flags invalid format", "Pending"]);
+    cases.push(["TC_009", "SQL Injection in Email", "Security", "Enter '' OR 1=1--' as email", "Show 'Invalid email or password' error", "Pending"]);
+    cases.push(["TC_010", "XSS Attempt in Email", "Security", "Enter '<script>alert(1)</script>'", "Input sanitized, login fails safely", "Pending"]);
+    cases.push(["TC_011", "Network Disconnection", "Network", "Turn on Airplane mode and submit form", "Show 'Network connection issue detected' toast", "Pending"]);
+    cases.push(["TC_012", "Network Reconnection", "Network", "Turn off Airplane mode and submit", "Login succeeds without app restart", "Pending"]);
 
-        switch(mod) {
-            case "Mobile UI":
-                name = `Viewport Scaling Check (DPI ${320 + (i % 200)})`;
-                action = `Render login screen on simulated ${320 + (i % 200)} DPI density`;
-                expected = "Fonts and margins scale appropriately without clipping";
-                break;
-            case "Touch Gestures":
-                name = `Rapid Multi-Tap (Coordinate ${i % 100},${i % 150})`;
-                action = `Perform 3 rapid taps at x:${i % 100}, y:${i % 150}`;
-                expected = "App ignores ghost touches and prevents double-submission";
-                break;
-            case "Authentication":
-                name = `Token Refresh Simulation ${i}`;
-                action = `Mock session expiry while typing password char ${i % 10}`;
-                expected = "State retained, token refresh triggered transparently";
-                break;
-            case "Device State":
-                name = `Battery Throttling (Level ${i % 20 + 5}%)`;
-                action = `Trigger low battery mode OS signal`;
-                expected = "Animations disabled to save power, login still works";
-                break;
-            case "Deep Linking":
-                name = `Malformed Auth Token Deep Link ${i}`;
-                action = `Open truestyle://login?token=INVALID_${i}`;
-                expected = "Link caught safely, redirects to standard login with error";
-                break;
+    const vocab = {
+        "Login UI": {
+            actions: [
+                "Rotate device to {orientation} on the login screen",
+                "Invoke soft keyboard on {field} and hide it",
+                "Switch to Dark Mode system-wide and open app",
+                "Change system font size to {size} and verify text",
+                "Test UI on {device} emulator"
+            ],
+            expected: [
+                "UI properly anchors elements to the bottom",
+                "Input fields remain fully visible and focused",
+                "Colors switch to dark theme assets accurately",
+                "Text does not clip or overflow container boundaries",
+                "Application loads without scaling distortion"
+            ],
+            orientation: ["Landscape", "Portrait"],
+            field: ["Email Input", "Password Input", "OTP Field"],
+            size: ["Largest", "Smallest", "Default"],
+            device: ["Pixel 7", "Galaxy S23", "iPhone SE"]
+        },
+        "Authentication": {
+            actions: [
+                "Use biometric authentication ({bio}) instead of password",
+                "Background app during login request for 5 seconds",
+                "Attempt login while receiving an incoming call",
+                "Double-tap the login button very fast",
+                "Log in, force close app from task manager, reopen"
+            ],
+            expected: [
+                "Authentication succeeds using Keychain/Keystore",
+                "Network request resumes successfully when app foregrounds",
+                "App handles interruption without crashing",
+                "Button debounce prevents duplicate network requests",
+                "Session persists and user goes straight to dashboard"
+            ],
+            bio: ["FaceID", "TouchID", "Fingerprint", "Iris Scanner"]
+        },
+        "Validation": {
+            actions: [
+                "Paste {length} characters of 'A' into the email field",
+                "Use voice-to-text to input '{voice}' into password",
+                "Tap outside the input field to trigger blur event",
+                "Submit form while password field is still active",
+                "Input emojis 💥🔥 into the email field"
+            ],
+            expected: [
+                "Input truncates at max length attribute boundary",
+                "Voice input is processed securely without masking failure",
+                "Inline validation error appears immediately",
+                "Keyboard dismisses automatically and form submits",
+                "Regex validation prevents invalid characters"
+            ],
+            length: ["50", "200"],
+            voice: ["Password one two three", "Hello world", "Drop tables"]
+        },
+        "Network": {
+            actions: [
+                "Simulate EDGE network speed during authentication",
+                "Switch from Wi-Fi to Cellular data while logging in",
+                "Enable battery saver mode which restricts background data",
+                "Send login request and immediately press physical Back button",
+                "Turn off location services before launching app"
+            ],
+            expected: [
+                "Loading spinner shows, request eventually times out safely",
+                "Connection handover handled gracefully",
+                "App warns user about restricted data conditions",
+                "Navigation cancels the request and returns to home screen",
+                "App does not crash due to missing location permissions"
+            ]
+        },
+        "Security": {
+            actions: [
+                "Check system logs via adb/logcat for sensitive data",
+                "Attempt to capture a screenshot on the login screen",
+                "Run app on a rooted/jailbroken device emulator",
+                "Modify local storage database file directly",
+                "Intercept HTTPS traffic using Charles Proxy"
+            ],
+            expected: [
+                "Passwords are not printed in plain text to logcat",
+                "Screen FLAG_SECURE prevents screenshot capture",
+                "Root detection mechanism warns the user or blocks access",
+                "Encrypted shared preferences resist tampering",
+                "Certificate pinning prevents MITM proxy sniffing"
+            ]
         }
+    };
 
-        cases.push([id, name, mod, action, expected, "Pending"]);
+    for (let i = 13; i <= 300; i++) {
+        const id = `TC_${i.toString().padStart(3, '0')}`;
+        const mod = modules[i % modules.length];
+        const modVocab = vocab[mod];
+        
+        let actionStr = rand(modVocab.actions);
+        let expectedStr = rand(modVocab.expected);
+
+        const replacePlaceholders = (str) => {
+            let res = str;
+            const regex = /\{(\w+)\}/g;
+            let match;
+            while ((match = regex.exec(res)) !== null) {
+                const key = match[1];
+                if (modVocab[key]) {
+                    res = res.replace(match[0], rand(modVocab[key]));
+                }
+            }
+            return res;
+        };
+
+        actionStr = replacePlaceholders(actionStr);
+        actionStr = replacePlaceholders(actionStr);
+        expectedStr = replacePlaceholders(expectedStr);
+        
+        const words = actionStr.split(' ').slice(0, 4).join(' ');
+        const testName = `${words}... Scenario`;
+
+        cases.push([id, testName, mod, actionStr, expectedStr, "Pending"]);
     }
 
-    // Convert to CSV string format
     const csvContent = cases.map(row => row.map(v => `"${v}"`).join(",")).join("\n");
-    
-    // Write to CSV file
-    const filePath = path.join(__dirname, 'Appium_Test_Cases_Summary.csv');
+    const filePath = path.join(__dirname, 'Login_Test_Cases_Summary.csv');
     fs.writeFileSync(filePath, csvContent);
-    console.log(`Successfully generated Excel-compatible CSV with 300 mobile test cases at: ${filePath}`);
+    console.log(`Successfully generated 300 REALISTIC test cases at: ${filePath}`);
 };
 
 generateMobileTestCases();
