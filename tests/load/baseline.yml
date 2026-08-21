@@ -25,6 +25,8 @@
 
 config:
   target: "http://localhost:5000"
+  plugins:
+    expect: {}
   phases:
     # Phase 1: Warm-up — ramp up to 100 virtual users over 15 seconds
     - duration: 15

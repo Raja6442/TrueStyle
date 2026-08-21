@@ -11,6 +11,8 @@
 
 config:
   target: "http://localhost:5000"
+  plugins:
+    expect: {}
   phases:
     - duration: 15
       arrivalRate: 50
