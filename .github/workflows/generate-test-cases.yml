@@ -1,0 +1,31 @@
+name: Generate Real-Time Test Cases
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  generate-test-cases:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Generate Test Cases CSV
+      run: node tests/generate-realtime-test-cases.js
+
+    - name: Upload Test Cases Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TrueStyle-Test-Cases
+        path: TrueStyle_RealTime_Test_Cases.csv
+        retention-days: 30
