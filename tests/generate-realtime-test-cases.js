@@ -5,7 +5,7 @@ const generateTestCases = () => {
     const cases = [];
     
     // CSV Header
-    cases.push(["Test ID", "Module", "Feature", "Test Name", "Action", "Expected Result", "Status"]);
+    cases.push(["Test ID", "Suite", "Test Name", "Action", "Expected Result", "Status"]);
 
     const modules = [
         { name: "Authentication", prefix: "AUTH" },
@@ -106,7 +106,7 @@ const generateTestCases = () => {
         const modVocab = vocab[mod.name];
         
         for (let i = 1; i <= count; i++) {
-            const id = `${mod.prefix}_${i.toString().padStart(3, '0')}`;
+            const id = `TC_${mod.prefix}_${i.toString().padStart(3, '0')}`;
             
             let feature = rand(modVocab.features);
             let actionStr = rand(modVocab.actions);
@@ -131,9 +131,9 @@ const generateTestCases = () => {
             expectedStr = replacePlaceholders(expectedStr);
             
             const words = actionStr.split(' ').slice(0, 4).join(' ');
-            const testName = `${words}... Scenario`;
+            const testName = `[${feature}] ${words}...`;
 
-            cases.push([id, mod.name, feature, testName, actionStr, expectedStr, "Pending"]);
+            cases.push([id, mod.name, testName, actionStr, expectedStr, "Pending"]);
         }
     };
 
