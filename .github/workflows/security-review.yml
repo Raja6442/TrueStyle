@@ -38,7 +38,7 @@ jobs:
           echo "## Frontend npm audit" >> $GITHUB_STEP_SUMMARY
           cd frontend && npm audit --audit-level=high 2>&1 | tee ../audit-frontend.txt || true
           echo '```' >> $GITHUB_STEP_SUMMARY
-          cat audit-frontend.txt >> $GITHUB_STEP_SUMMARY
+          cat ../audit-frontend.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         continue-on-error: true
 
@@ -87,6 +87,7 @@ jobs:
         with:
           name: Vulnerability-Test-Results
           path: docs/Vulnerability Test Results/
+          if-no-files-found: ignore
         if: always()
 
       - name: Upload scanner outputs
@@ -97,4 +98,5 @@ jobs:
             audit-frontend.txt
             semgrep-results.json
             gitleaks-report.json
+          if-no-files-found: ignore
         if: always()

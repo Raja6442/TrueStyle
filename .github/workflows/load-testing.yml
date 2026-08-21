@@ -30,6 +30,12 @@ jobs:
         run: npm install -g artillery
 
       - name: Start TrueStyle Backend
+        env:
+          PORT: 5000
+          GMAIL_USER: dummy@gmail.com
+          GMAIL_APP_PASSWORD: dummy
+          VITE_SUPABASE_URL: http://dummy.supabase.co
+          VITE_SUPABASE_ANON_KEY: dummy
         run: |
           # Start the backend server in the background
           node backend/index.js &
@@ -84,6 +90,7 @@ jobs:
             tests/load/*.html
             tests/load/*.json
             tests/load/*.txt
+          if-no-files-found: ignore
         if: always()
 
       - name: Upload Security Excel Reports
@@ -91,4 +98,5 @@ jobs:
         with:
           name: Security-Excel-Reports
           path: docs/Vulnerability Test Results/*.xlsx
+          if-no-files-found: ignore
         if: always()
