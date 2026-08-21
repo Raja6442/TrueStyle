@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Function to check if user is admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Profiles: Users can read/write their own profile. Admins can read all.
+    match /profiles/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Product Scans: Users can manage their own scans. Admins can read all.
+    match /product_scans/{scanId} {
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+    }
+
+    // Favorite Brands: Users can manage their own
+    match /favorite_brands/{favId} {
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+    }
+
+    // Bookmarked Products: Users can manage their own
+    match /bookmarked_products/{bookmarkId} {
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+    }
+
+    // Trusted Sellers: Anyone can read, only admins can write
+    match /trusted_sellers/{sellerId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Official Brands: Anyone can read, only admins can write
+    match /official_brands/{brandId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Support Tickets: Users can read their own, anyone can create, admins can read/write all
+    match /support_tickets/{ticketId} {
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+
+    // Feedbacks: Anyone can create, admins can read/write
+    match /feedbacks/{feedbackId} {
+      allow read, update, delete: if request.auth != null && isAdmin();
+      allow create: if request.auth != null;
+    }
+
+    // Audit Logs: Admins only
+    match /audit_logs/{logId} {
+      allow read, write: if request.auth != null && isAdmin();
+    }
+
+    // User Preferences: Users can manage their own preferences
+    match /user_preferences/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

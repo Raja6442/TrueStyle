@@ -1,0 +1,48 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if the user is an admin
+    // Note: In Storage, we can't directly query Firestore easily. 
+    // It's best to rely on Custom Claims on the auth token for admin status.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Helper function to validate image uploads (max 5MB, image types only)
+    function isImage() {
+      return request.resource == null || (
+          request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*')
+      );
+    }
+
+    // 1. Avatars
+    // Users can read any avatar, but can only upload/edit their own.
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId && isImage();
+    }
+
+    // 2. Product Scans
+    // Users can read and write to their own scan folder. Admins can read all.
+    match /scans/{userId}/{scanId}/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId && isImage();
+    }
+
+    // 3. Support Tickets
+    // Users can upload attachments, admins can view them.
+    match /support/{ticketId}/{fileName} {
+      allow read: if request.auth != null && isAdmin(); // Assume users don't need to re-download their own uploads right away
+      allow write: if request.auth != null && isImage(); // Open write for logged-in users submitting tickets
+    }
+
+    // 4. Public Assets (Covers, static assets)
+    // Anyone can read, only admins can write.
+    match /public/covers/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage();
+    }
+  }
+}

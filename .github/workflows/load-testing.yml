@@ -1,0 +1,94 @@
+name: Performance & Load Testing
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  load-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm install || echo "No package.json found in backend/"
+          npm install express cors axios nodemailer express-rate-limit
+
+      - name: Install Artillery
+        run: npm install -g artillery
+
+      - name: Start TrueStyle Backend
+        run: |
+          # Start the backend server in the background
+          node backend/index.js &
+          # Wait for the server to be ready
+          sleep 5
+
+      - name: 1. Run Smoke Test (10 seconds)
+        run: |
+          echo "Running Smoke Test..."
+          artillery run tests/load/smoke.yml --output tests/load/smoke-results.json
+          artillery report tests/load/smoke-results.json --output tests/load/smoke-report.html
+
+      - name: 2. Run Baseline Test (60 seconds)
+        run: |
+          echo "Running Baseline Test..."
+          artillery run tests/load/baseline.yml --output tests/load/baseline-results.json
+          artillery report tests/load/baseline-results.json --output tests/load/baseline-report.html
+
+      - name: 3. Run Stress Test (60 seconds)
+        run: |
+          echo "Running Stress Test..."
+          artillery run tests/load/stress.yml --output tests/load/stress-results.json
+          artillery report tests/load/stress-results.json --output tests/load/stress-report.html
+
+      - name: 4. Run Standalone Node.js Test
+        run: |
+          echo "Running Standalone Load Test..."
+          node tests/load/baseline-standalone.cjs > tests/load/standalone-report.txt
+
+      - name: Generate Security Excel Reports (if script exists)
+        run: |
+          if [ -f "scratch/create_excel.cjs" ]; then
+            echo "Generating Excel reports..."
+            mkdir -p "Vulnerability Test Results"
+            cd scratch
+            node create_excel.cjs
+            cd ..
+          elif [ -f "security/scripts/create_excel.py" ]; then
+            echo "Generating Excel reports..."
+            mkdir -p "Vulnerability Test Results"
+            python security/scripts/create_excel.py
+          else
+            echo "Excel script not found, skipping."
+          fi
+        continue-on-error: true
+
+      - name: Upload Load Testing Reports (HTML/JSON/TXT)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Load-Testing-Reports
+          path: |
+            tests/load/*.html
+            tests/load/*.json
+            tests/load/*.txt
+        if: always()
+
+      - name: Upload Security Excel Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: Security-Excel-Reports
+          path: docs/Vulnerability Test Results/*.xlsx
+        if: always()

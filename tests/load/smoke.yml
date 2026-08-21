@@ -1,0 +1,40 @@
+# ──────────────────────────────────────────────────────────────────
+# TrueStyle Quick Smoke Test
+# ──────────────────────────────────────────────────────────────────
+# A fast 10-second test with 10 users to verify the server is
+# responding correctly before running the full baseline test.
+#
+# RUN:
+#   artillery run load-tests/smoke.yml
+# ──────────────────────────────────────────────────────────────────
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+      name: "Smoke Test: 10 users/sec for 10 seconds"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "OTP validation test (400 expected)"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/send-otp"
+          json:
+            to_name: "SmokeTestUser"
+          expect:
+            - statusCode: 400
+
+  - name: "Scrape missing URL (400 expected)"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/scrape"
+          json: {}
+          expect:
+            - statusCode: 400

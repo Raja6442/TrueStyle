@@ -1,0 +1,90 @@
+# ──────────────────────────────────────────────────────────────────
+# TrueStyle Baseline / Load Test — Artillery Configuration
+# ──────────────────────────────────────────────────────────────────
+#
+# WHAT THIS DOES:
+#   Simulates 100 virtual users hitting your backend API continuously
+#   for 1 minute. Measures requests/sec, response times, error rates.
+#
+# HOW IT WORKS:
+#   - Phase 1 (0–15s):  Ramp from 0 → 100 users/sec  (warm-up)
+#   - Phase 2 (15–60s): Sustain 100 users/sec          (steady state)
+#
+# SAFETY:
+#   - /api/send-otp is tested with INVALID payloads (missing fields)
+#     so no real emails are sent. Expects 400 responses.
+#   - /api/scrape is tested with a public, harmless test URL.
+#
+# RUN:
+#   artillery run load-tests/baseline.yml
+#
+# GENERATE HTML REPORT:
+#   artillery run load-tests/baseline.yml --output load-tests/results.json
+#   artillery report load-tests/results.json --output load-tests/report.html
+# ──────────────────────────────────────────────────────────────────
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    # Phase 1: Warm-up — ramp up to 100 virtual users over 15 seconds
+    - duration: 15
+      arrivalRate: 5
+      rampTo: 100
+      name: "Warm-up: Ramp to 100 users/sec"
+
+    # Phase 2: Sustained load — 100 virtual users/sec for 45 seconds
+    - duration: 45
+      arrivalRate: 100
+      name: "Sustained Load: 100 users/sec"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  # Ensure Artillery doesn't follow redirects
+  http:
+    timeout: 10
+
+scenarios:
+  # ─────────────────────────────────────────────
+  # Scenario 1: OTP Endpoint — Validation Test
+  # Sends requests with MISSING required fields
+  # so no real emails are sent (expects 400)
+  # ─────────────────────────────────────────────
+  - name: "POST /api/send-otp (validation — no email sent)"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/send-otp"
+          json:
+            to_name: "LoadTestUser"
+            # to_email and otp_code are MISSING → triggers 400
+          expect:
+            - statusCode: 400
+
+  # ─────────────────────────────────────────────
+  # Scenario 2: Scrape Endpoint — Missing URL
+  # Sends request with no URL (expects 400)
+  # ─────────────────────────────────────────────
+  - name: "POST /api/scrape (missing URL — validation test)"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/scrape"
+          json: {}
+          expect:
+            - statusCode: 400
+
+  # ─────────────────────────────────────────────
+  # Scenario 3: Scrape Endpoint — Valid Request
+  # Uses httpbin.org (a safe public test API)
+  # ─────────────────────────────────────────────
+  - name: "POST /api/scrape (valid URL — httpbin.org)"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/scrape"
+          json:
+            url: "https://httpbin.org/html"
+          expect:
+            - statusCode: 200

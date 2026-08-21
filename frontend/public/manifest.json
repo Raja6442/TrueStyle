@@ -1,0 +1,17 @@
+{
+  "name": "TrueStyle",
+  "short_name": "TrueStyle",
+  "start_url": "http://192.168.99.43:5173/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0043bd",
+  "description": "TrueStyle protects online fashion shoppers from counterfeits using advanced AI.",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/lucide-react/lucide/main/icons/shield-alert.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

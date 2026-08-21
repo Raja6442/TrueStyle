@@ -1,0 +1,53 @@
+# ──────────────────────────────────────────────────────────────────
+# TrueStyle Stress Test
+# ──────────────────────────────────────────────────────────────────
+# Pushes beyond baseline to find the breaking point.
+# Ramps from 50 → 200 → 500 users/sec.
+#
+# RUN:
+#   artillery run load-tests/stress.yml --output load-tests/stress-results.json
+#   artillery report load-tests/stress-results.json --output load-tests/stress-report.html
+# ──────────────────────────────────────────────────────────────────
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 15
+      arrivalRate: 50
+      name: "Warm-up: 50 users/sec"
+
+    - duration: 15
+      arrivalRate: 100
+      name: "Normal Load: 100 users/sec"
+
+    - duration: 15
+      arrivalRate: 200
+      name: "High Load: 200 users/sec"
+
+    - duration: 15
+      arrivalRate: 500
+      name: "Stress: 500 users/sec"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "OTP validation (400)"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/send-otp"
+          json:
+            to_name: "StressUser"
+          expect:
+            - statusCode: 400
+
+  - name: "Scrape validation (400)"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/scrape"
+          json: {}
+          expect:
+            - statusCode: 400
