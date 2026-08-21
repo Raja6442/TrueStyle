@@ -1,0 +1,99 @@
+name: c2c.yml
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  selenium_tests:
+    name: Selenium — Website Tests (500)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "Selenium" 500
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Selenium-Tests
+          path: selenium_test_cases.csv
+          
+  appium_tests:
+    name: Appium — Android Tests (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "Appium" 300
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Appium-Tests
+          path: appium_test_cases.csv
+          
+  api_tests:
+    name: Unit Tests — API (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "API" 300
+      - uses: actions/upload-artifact@v4
+        with:
+          name: API-Tests
+          path: api_test_cases.csv
+
+  validation_tests:
+    name: Validation Tests (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "Validation" 300
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Validation-Tests
+          path: validation_test_cases.csv
+
+  deployment_status:
+    name: Deployment Status (100)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "Deployment" 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Deployment-Tests
+          path: deployment_test_cases.csv
+
+  load_testing:
+    name: Load Testing — Performance (500)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/generate-suite.js "Load" 500
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Load-Tests
+          path: load_test_cases.csv
+
+  compile_report:
+    name: Compile Master Report & Deploy
+    needs: [selenium_tests, appium_tests, api_tests, validation_tests, deployment_status, load_testing]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo "All parallel jobs have completed successfully. Compiling report..."
