@@ -137,8 +137,19 @@ const generateTestCases = () => {
         }
     };
 
-    // Generate 300 test cases per module = 1,200 total cases
-    modules.forEach(mod => {
+    // Get module argument
+    const targetModuleStr = process.argv[2];
+    let targetModules = modules;
+    
+    if (targetModuleStr) {
+        const found = modules.find(m => m.name.toLowerCase().includes(targetModuleStr.toLowerCase()));
+        if (found) {
+            targetModules = [found];
+        }
+    }
+
+    // Generate 300 test cases per module
+    targetModules.forEach(mod => {
         generateModuleCases(mod, 300);
     });
 
@@ -146,9 +157,12 @@ const generateTestCases = () => {
     const csvContent = cases.map(row => row.map(v => `"${v}"`).join(",")).join("\n");
     
     // Save to file
-    const filePath = path.join(__dirname, '..', 'TrueStyle_RealTime_Test_Cases.csv');
+    const safeName = targetModuleStr ? targetModuleStr.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'all';
+    const fileName = targetModuleStr ? `${safeName}_test_cases.csv` : 'TrueStyle_RealTime_Test_Cases.csv';
+    const filePath = path.join(__dirname, '..', fileName);
+    
     fs.writeFileSync(filePath, csvContent);
-    console.log(`Successfully generated ${cases.length - 1} REALISTIC test cases at: ${filePath}`);
+    console.log(`Successfully generated ${cases.length - 1} REALISTIC test cases for ${targetModuleStr || 'All Modules'} at: ${filePath}`);
 };
 
 generateTestCases();

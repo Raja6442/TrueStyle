@@ -8,24 +8,66 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-test-cases:
+  auth_tests:
+    name: Authentication Test Cases (300)
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: node tests/generate-realtime-test-cases.js "Authentication"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Auth-Test-Cases
+          path: authentication_test_cases.csv
+          
+  product_tests:
+    name: Product Verification Test Cases (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: node tests/generate-realtime-test-cases.js "Product"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Product-Test-Cases
+          path: product_test_cases.csv
+          
+  dashboard_tests:
+    name: Dashboard Analytics Test Cases (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: node tests/generate-realtime-test-cases.js "Dashboard"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dashboard-Test-Cases
+          path: dashboard_test_cases.csv
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+  settings_tests:
+    name: System Settings Test Cases (300)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: node tests/generate-realtime-test-cases.js "Settings"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Settings-Test-Cases
+          path: settings_test_cases.csv
 
-    - name: Generate Test Cases CSV
-      run: node tests/generate-realtime-test-cases.js
-
-    - name: Upload Test Cases Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: TrueStyle-Test-Cases
-        path: TrueStyle_RealTime_Test_Cases.csv
-        retention-days: 30
+  compile_report:
+    name: Compile Master Report & Deploy
+    needs: [auth_tests, product_tests, dashboard_tests, settings_tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "All parallel Real-Time test generation jobs have completed successfully. Compiling report..."
