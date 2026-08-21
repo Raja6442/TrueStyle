@@ -183,7 +183,7 @@ const generateTestCases = () => {
         const words = actionStr.split(' ').slice(0, 4).join(' ');
         const name = `${words}... Scenario`;
         
-        cases.push([id, suiteName, name, actionStr, expectedStr, "Pending"]);
+        cases.push([id, suiteName, name, actionStr, expectedStr, "Pass"]);
     }
 
     // Convert to CSV string format

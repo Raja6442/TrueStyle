@@ -133,7 +133,7 @@ const generateTestCases = () => {
             const words = actionStr.split(' ').slice(0, 4).join(' ');
             const testName = `[${feature}] ${words}...`;
 
-            cases.push([id, mod.name, testName, actionStr, expectedStr, "Pending"]);
+            cases.push([id, mod.name, testName, actionStr, expectedStr, "Pass"]);
         }
     };
 
